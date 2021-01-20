@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<!--
+
+-->
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" type="text/css" href="style.css"> 
+		<title>Calculator, kalkulačka</title>
+		
+	<script>
+		var memory  = [""];
+		var pocitadlo = 0;
+		var blokPocitadlo = 0;
+		var zaciatok = true;
+		
+		function vypis() {
+			strID = event.srcElement.id;
+			hodnota = '';
+			typ = 0;
+		
+			switch (strID) {	
+				case '0': hodnota = '0'; typ = 0; break;
+				case '1': hodnota = '1'; typ = 0; break;
+				case '2': hodnota = '2'; typ = 0; break;
+				case '3': hodnota = '3'; typ = 0; break;
+				case '4': hodnota = '4'; typ = 0; break;
+				case '5': hodnota = '5'; typ = 0; break;
+				case '6': hodnota = '6'; typ = 0; break;
+				case '7': hodnota = '7'; typ = 0; break;
+				case '8': hodnota = '8'; typ = 0; break;
+				case '9': hodnota = '9'; typ = 0; break;
+				
+				case '.': hodnota = '.'; typ = 1; break;
+				case 'percento': hodnota = '%'; typ = 1; break;
+				case 'div': hodnota = ' / '; typ = 1; break;
+				case 'times': hodnota = ' x '; typ = 1; break;
+				case 'lBracket': hodnota = '('; typ = 1; break;
+				case 'rBracket': hodnota = ')'; typ = 1; break;
+				case 'add': hodnota = ' + '; typ = 1; break;							
+				case '-': hodnota = '-'; typ = 1; break;
+				case 'pow2': hodnota = '^2'; typ = 1; break;
+				case 'sqrt2': hodnota = 'sqrt('; typ = 1; break;
+			
+				default:
+					alert('Chybny vstup');					
+			}
+			
+			if(zaciatok === true) {
+				if(isNaN(document.getElementById("vstup2").value) === false &&  typ === 1) { //ak je va vstupe 2 cislo
+					document.getElementById("vstup2").value = document.getElementById("vstup2").value + hodnota;
+				} else document.getElementById("vstup2").value = hodnota;										
+				
+			} else document.getElementById("vstup2").value = document.getElementById("vstup2").value + hodnota;						
+
+			zaciatok = false;
+
+			memory.push(document.getElementById("vstup2").value); //zapise pamat
+			pocitadlo = memory.length - 1;z
+		}
+
+		function vymazVstup() {
+			document.getElementById("vstup2").value = '';
+			document.getElementById("hlasky").innerHTML = '';
+			pocitadlo = memory.length - 1;
+			zaciatok = true;
+		}
+		
+		//index je o poziciu pred cislom (hned pred indexom sa nachadza koniec cisla)
+		//Alebo najde vyraz so zatvorkou
+		function najdiVyrazPodMocninou(text, index) {
+					
+			vyraz = '';										
+
+			//============= ak je pod mocninou cislo ===========
+			if(isNaN(text.charAt(index-1)) === false) { //aj nie je neplatne cislo, teda je cislom			
+				vyraz = text.charAt(index-1) + vyraz;
+				
+				//cita odzadu
+				for (ii = index-1-1; ii >= 0 ; ii--) {
+					if(isNaN(text.charAt(ii)) === true) return vyraz; //ak uz nenajde cislo, tak sme skoncili
+					vyraz = text.charAt(ii) + vyraz;
+				}								  			  
+				return vyraz;//ak by cislo bolo az do konca				
+			}
+
+			//======== ak je pod mocninou vyraz v zatvorke =======
+			zatvorky = 0;
+			if(text.charAt(index-1) === ')') {
+				for (ii = index-1; ii >= 0 ; ii--) {
+					if(text.charAt(ii) === '(' && zatvorky == 0) return vyraz; //koncime
+					
+					//osetrenie vnutornych zatvoriek
+					if(text.charAt(ii) === ')') zatvorky++;
+					if(text.charAt(ii) === '(' && zatvorky != 0) zatvorky--; //koncime
+					
+					vyraz = text.charAt(ii) + vyraz;
+				}
+				return vyraz;
+			}			
+			
+			return vyraz;
+		}
+		
+		function nahradMocninu(text, index, cislo) {						
+			vystup = '';
+			
+			//1. prepiseme to pred indexom
+			for (i = 0; i < index ; i++) {
+				
+				vystup = vystup + text.charAt(i);
+			}
+			
+			//2. prepiseme novu hodnotu namiesto indexu
+			vystup = vystup + ' * ' + cislo + ' ';
+			
+			//3. prepiseme to za indexmom
+			for (i = index+1; i < text.length ; i++) {
+				vystup = vystup + text.charAt(i);
+			}			
+			return vystup;
+		}
+		
+		function preformatujMocniny(vstup) {
+			//document.getElementById("vstup2").value = 'vstup: ' + vstup;
+							
+			for (i = vstup.length-1; i >= 0 ; i--) { 
+				//document.getElementById("vstup2").value = i;
+				if(vstup.charAt(i) === '^') {//ak najdeme znamienko mocniny
+									
+					cislo = najdiVyrazPodMocninou(vstup, i);//najdeme cislo pred mocninou					
+					//document.getElementById("vstup2").value = vstup + ' - ' + cislo + ' - ' + i;
+					
+					if(cislo.charAt(0) === '') cislo = 'abcs'; //zada schvalne chybny vystum lebo aj vstup bol chybny
+					
+					vstup = nahradMocninu(vstup, i, cislo);
+					i = vstup.length-1;//ideme v cykle od zaciatku ak by nam vynikli nove mocniny											
+				}
+			}
+			
+			return vstup;
+		}
+		
+		function preformatuj(vstup) {
+			//Pre istotu ponecha medzery a by bol chybny vstup
+			 
+			//preformatuje mocniny 
+			for(i=0; i<vstup.length; i++) { //aby sme vymenili vsetky znaky
+				vstup = vstup.replace('^2', '^');
+				vstup = vstup.replace(" ", ""); //odstrani z textu biele znaky
+				
+				vstup = vstup.replace('x', ' * '); //vymeni x za *
+				vstup = vstup.replace('%', ' * 0.01 '); //vymeni % za *0.01
+				vstup = vstup.replace('sqrt', ' Math.sqrt');
+			
+			}			
+			vstup = preformatujMocniny(vstup);		
+								
+			return vstup;
+		}
+		
+		function vypocitaj() {
+			vyrazPom = document.getElementById("vstup2").value;
+			vyrazStr = document.getElementById("vstup2").value;
+			vyrazStr = preformatuj(vyrazStr); //Prevedie na spravny format
+			
+			if(blokPocitadlo == 5) {
+				document.getElementById("blok").innerHTML= vyrazPom;
+				blokPocitadlo = 0;
+			} else if (blokPocitadlo == 0) document.getElementById("blok").innerHTML = vyrazPom;
+			else document.getElementById("blok").innerHTML = document.getElementById("blok").innerHTML + '<br>' + vyrazPom;
+
+				
+			blokPocitadlo++
+			
+			chyba = false;
+			try {
+				vysledok = eval(vyrazStr);
+			} catch(err) {
+				document.getElementById("hlasky").innerHTML = err.toString();
+				chyba = true;
+			}
+					
+			//naVystupe = document.getElementById("hlasky").innerHTML;
+			
+			if (typeof vysledok === 'undefined') {
+				document.getElementById("hlasky").value = "no input";
+			} else {
+				document.getElementById("vstup2").value = vysledok;				
+				if(chyba === false) {
+					document.getElementById("blok").innerHTML = document.getElementById("blok").innerHTML + ' = ' + vysledok;
+					document.getElementById("hlasky").innerHTML = '';
+				}
+			}
+			
+			pocitadlo = memory.length - 1;
+			zaciatok = true;
+		}	
+		
+		function vratKrok() {
+			document.getElementById("vstup2").value = memory[pocitadlo];
+			if(pocitadlo > 0) {
+				pocitadlo--;
+			}					
+		}
+		
+        function spracujKeypress(e) {
+            switch(e.keyCode) {
+                 case 48: document.getElementById('0').click(); break;
+                 case 49: document.getElementById('1').click(); break;
+                 case 50: document.getElementById('2').click(); break;
+                 case 51: document.getElementById('3').click(); break;
+                 case 52: document.getElementById('4').click(); break;
+                 case 53: document.getElementById('5').click(); break;
+                 case 54: document.getElementById('6').click(); break;
+                 case 55: document.getElementById('7').click(); break;
+                 case 56: document.getElementById('8').click(); break;
+                 case 57: document.getElementById('9').click(); break;
+
+                 case 37: document.getElementById('percento').click(); break;
+                 case 40: document.getElementById('lBracket').click(); break;
+                 case 41: document.getElementById('rBracket').click(); break;
+                 case 42: document.getElementById('times').click(); break; // '*'
+                 case 43: document.getElementById('add').click(); break;
+                 case 45: document.getElementById('-').click(); break;
+                 case 46: document.getElementById('.').click(); break;
+                 case 58:                                                  // ':'
+                 case 47: document.getElementById('div').click(); break;   // '/'
+                 case 61:                                                  // '='
+                 case 13: document.getElementById('equal').click(); break; // Enter
+                 case 67:                                                  // 'C'
+                 case 99: document.getElementById('C').click(); break;     // 'c'
+            }
+       }
+
+        document.addEventListener('keypress', spracujKeypress);
+	</script>
+	
+	</head>
+	<body class="na_stred">
+		
+		
+	<table class="calculator">		
+				
+		<tr class="vypis">
+			<td colspan="6" rowspan="4">
+				<label id="blok"></label>	
+			</td>			
+		</tr>		
+		
+		<tr></tr>		
+		<tr></tr>
+		<tr></tr>
+		
+		<tr class="vystup">
+			<td colspan="6" >
+				<input type="text" id="vstup2">													
+			</td>				
+		</tr>
+		
+		<tr class="hlasky" >
+			<td colspan="6">
+				<label id="hlasky"></label>				
+			</td>
+		</tr>				
+		
+		<tr>
+			<td><input type="button" id="7" value="7" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="8" value="8" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="9" value="9" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="div" value="&#247;" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="back" value="↰" class="myButton" onClick=vratKrok();></td>
+			<td><input type="button" id="C" value="C/CE" class="myButton" onClick=vymazVstup();></td>
+		</tr>
+		
+		<tr>
+			<td><input type="button" id="4" value="4" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="5" value="5" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="6" value="6" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="times" value="&#215;" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="lBracket" value="(" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="rBracket" value=")" class="myButton" onClick=vypis();></td>
+		</tr>
+		
+		<tr>
+			<td><input type="button" id="1" value="1" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="2" value="2" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="3" value="3" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="-" value="-" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="pow2" value="x^2" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="sqrt2" value="&Sqrt;" class="myButton" onClick=vypis();></td>
+		</tr>
+
+		<tr>
+			<td><input type="button" id="0" value="0" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="." value="." class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="percento" value="%" class="myButton" onClick=vypis();></td>
+			<td><input type="button" id="add" value="+" class="myButton" onClick=vypis();></td>
+			<td colspan="2"><input type="button" id="equal" value="=" class="myButton" onClick=vypocitaj();></td>
+		</tr>
+
+	</table>		
+		
+	<br>	
+	<br>	
+	<br>		
+	</body>
+</html>
+
+
+
+
